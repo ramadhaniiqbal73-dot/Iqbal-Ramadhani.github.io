@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<link rel="stylesheet" href="style.css">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jalan Gosong: Sebuah Investigasi Interaktif: Penulis by Mochammad Iqbal Ramadhani</title>
+    <!-- Chosen Palette: Somber Neutrals (Sepia, Charcoal, Muted Greens) -->
+    <!-- Application Structure Plan: An interactive, non-linear investigation board. Users explore nodes (Characters, Evidence, Locations) to piece together the mystery of Jalan Gosong. This structure mirrors the protagonist's discovery process, making it more engaging than a linear story. The goal is immersive storytelling through exploration. -->
+    <!-- Visualization & Content Choices: 
+        - Characters: HTML/CSS network map -> Goal: Organize -> Interaction: Click for bio -> Justification: Visualizes relationships without complex graphics.
+        - Timeline: HTML/CSS vertical timeline -> Goal: Show Change -> Interaction: Scroll & click for details -> Justification: Clearly shows sequence of events.
+        - Penyakit Manis Data: Chart.js Line Chart -> Goal: Reveal/Relate -> Interaction: Unlock & view correlation -> Justification: Provides a powerful "aha!" moment by visualizing the hidden data-driven truth.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Lato:wght@400;700&display=swap');
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #fdfaf6;
+            color: #3a3a3a;
+        }
+        h1, h2, h3, .font-serif {
+            font-family: 'Merriweather', serif;
+        }
+        .node {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #d1d5db;
+            border: 4px solid #fdfaf6;
+        }
+        .unlocked.timeline-item::before {
+            background-color: #8c6a56;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#4a3f35]">Jalan Gosong</h1>
+	    <p class="text-lg text-brownmixedgray-600 mt-2"> Cerita by Mochammad Iqbal Ramadhani
+            <p class="text-lg text-gray-600 mt-2">Sebuah Investigasi Interaktif</p>
+            <div class="w-24 h-1 bg-[#8c6a56] mx-auto mt-4"></div>
+        </header>
+
+        <!-- Investigation Board -->
+        <main id="investigation-board" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <!-- Kolom Kiri: Karakter & Lokasi -->
+            <div class="md:col-span-1 space-y-8">
+                <!-- Karakter -->
+                <section>
+                    <h2 class="text-2xl font-serif font-bold mb-4 border-b-2 border-[#d3c5bc] pb-2">Tokoh Kunci</h2>
+                    <div id="characters-container" class="space-y-3">
+                        <!-- Karakter akan di-render oleh JS -->
+                    </div>
+                </section>
+
+                <!-- Lokasi -->
+                <section>
+                    <h2 class="text-2xl font-serif font-bold mb-4 border-b-2 border-[#d3c5bc] pb-2">Peta Prabayaksa</h2>
+                    <div id="locations-container" class="space-y-3">
+                        <!-- Lokasi akan di-render oleh JS -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Kolom Kanan: Petunjuk & Linimasa -->
+            <div class="md:col-span-2 space-y-8">
+                 <!-- Petunjuk -->
+                <section>
+                    <h2 class="text-2xl font-serif font-bold mb-4 border-b-2 border-[#d3c5bc] pb-2">Barang Bukti</h2>
+                    <div id="evidence-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <!-- Petunjuk akan di-render oleh JS -->
+                    </div>
+                </section>
+                
+                <!-- Linimasa Tragedi -->
+                <section>
+                    <h2 class="text-2xl font-serif font-bold mb-4 border-b-2 border-[#d3c5bc] pb-2">Linimasa Peristiwa</h2>
+                    <div class="relative border-l-2 border-gray-200 ml-8 pl-8">
+                        <div id="timeline-container" class="space-y-10">
+                            <!-- Linimasa akan di-render oleh JS -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
+        <!-- Chart Section (Hidden by default) -->
+        <section id="chart-section" class="mt-12 p-8 bg-white rounded-lg shadow-lg hidden">
+            <h2 class="text-2xl font-serif font-bold mb-4 text-center">Analisis: Penyakit Manis & Sungai Pabrik</h2>
+             <p class="text-center text-gray-600 mb-6">Data dari buku catatan sipil menunjukkan korelasi yang mengkhawatirkan antara lokasi kematian anak-anak dan aliran sungai dari Pabrik Gula tua.</p>
+            <div class="chart-container relative h-96 max-w-4xl mx-auto">
+                <canvas id="deathsChart"></canvas>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none modal-overlay">
+        <div id="modal-content" class="bg-[#fdfaf6] rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto p-8 transform scale-95 modal-content">
+            <h3 id="modal-title" class="text-3xl font-serif font-bold mb-4 text-[#4a3f35]"></h3>
+            <div id="modal-body" class="text-gray-700 leading-relaxed space-y-4"></div>
+            <button id="modal-close" class="mt-6 bg-[#8c6a56] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#7a5c4b] transition-colors">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATABASE APLIKASI ---
+            const DB = {
+                characters: {
+                    aditya: { name: "Aditya", role: "Sang Protagonis", desc: "Kembali ke Prabayaksa setelah 10 tahun untuk pemakaman neneknya, hanya untuk mengungkap kebenaran yang terkubur dari masa lalunya dan kotanya." },
+                    nenek_sumi: { name: "Nenek Sumi", role: "Sang Pewaris Rahasia", desc: "Nenek Aditya yang meninggalkan sebuah kotak kayu berisi petunjuk, memicu seluruh investigasi. Ia hidup dalam penyesalan atas dosa kolektif kota." },
+                    pak_tirtayasa: { name: "Pak Tirtayasa", role: "Sang Penjaga Ingatan", desc: "Pemilik toko buku tua yang bijaksana. Ia menentang histeria massa dan menyimpan catatan-catatan penting yang menjadi kunci untuk mengungkap kebenaran di balik 'Penyakit Manis'." },
+                    pak_karta: { name: "Pak Karta", role: "Suara Penyesalan", desc: "Seorang warga tua yang anaknya menjadi korban 'Penyakit Manis'. Ia mewakili rasa bersalah kolektif kota dan menceritakan tentang rapat mengerikan di balai desa." },
+                    laila_aisyah: { name: "Laila & Aisyah", role: "Sang Kambing Hitam", desc: "Pemilik 'Istana Boneka Laila' dan putrinya. Mereka menjadi korban fitnah, dituduh sebagai penyebab 'Penyakit Manis' dan menjadi target utama dari ritual pembersihan kota." }
+                },
+                locations: {
+                    jalan_gosong: { name: "Jalan Gosong", desc: "Dulu dikenal sebagai Jalan Niaga, jantung ekonomi Prabayaksa. Kini, hanya tersisa puing-puing hangus dari sebuah tragedi yang disengaja untuk menutupi dosa yang lebih besar." },
+                    pabrik_gula: { name: "Pabrik Gula Tua", desc: "Sumber kemakmuran Prabayaksa selama puluhan tahun, sekaligus sumber racun yang diam-diam membunuh anak-anak kota melalui limbah kimia yang mencemari sungai." },
+                    toko_buku: { name: "Toko Buku Pak Tirtayasa", desc: "Sebuah kapsul waktu yang menyimpan buku-buku dan catatan-catatan lama, termasuk buku kas gereja yang menjadi bukti kunci pola kematian anak-anak." }
+                },
+                evidence: {
+                    kotak_kayu: { name: "Kotak Kayu", icon: "📦", desc: "Warisan terakhir Nenek Sumi untuk Aditya, berisi tiga benda krusial: foto Aisyah, gigi susu, dan sebuah buku harian yang menjadi awal dari terungkapnya seluruh kebohongan." },
+                    buku_harian: { name: "Buku Harian", icon: "📖", desc: "Catatan pilu Nenek Sumi yang mengungkapkan bahwa kebakaran Jalan Gosong bukanlah kecelakaan, melainkan sebuah ritual pembersihan massal yang disetujui oleh warga kota." },
+                    foto_aisyah: { name: "Foto Aisyah", icon: "🖼️", desc: "Satu-satunya gambar Aisyah, putri Laila. Foto ini memberikan wajah pada korban yang tidak bersalah dan menjadi simbol dari fitnah keji yang menimpa keluarganya." },
+                    buku_kas: { name: "Buku Kas Gereja", icon: "📓", desc: "Diungkap oleh Pak Tirtayasa, buku ini berisi catatan kematian anak-anak. Analisis data di dalamnya menunjukkan pola mengerikan yang menghubungkan kematian dengan sungai dari pabrik gula." }
+                },
+                timeline: {
+                    penyakit_manis: { year: "5 Tahun Sebelum Tragedi", title: "Wabah 'Penyakit Manis'", desc: "Anak-anak di hilir sungai mulai meninggal secara misterius karena keracunan limbah pabrik gula. Warga yang ketakutan dan merasa bersalah menyebutnya 'Penyakit Manis'." },
+                    kambing_hitam: { year: "1 Bulan Sebelum Tragedi", title: "Fitnah Menyebar", desc: "Dalam keputusasaan, warga mencari kambing hitam. Laila dan 'Istana Boneka'-nya menjadi target, dituduh menyebarkan kutukan." },
+                    rapat_gelap: { year: "3 Hari Sebelum Tragedi", title: "Rapat di Balai Desa", desc: "Sebuah kesepakatan mengerikan dibuat: membakar Jalan Gosong untuk 'menyucikan' kota dan mengubur semua bukti, termasuk para saksi." },
+                    malam_tragedi: { year: "Malam Tragedi", title: "Jalan Gosong Terbakar", desc: "Warga kota melaksanakan ritual pembersihan. Orang tua Aditya, yang mencoba melindungi Laila dan Aisyah, tewas dalam kebakaran besar itu." },
+                    pengungkapan: { year: "10 Tahun Kemudian", title: "Kebenaran Terungkap", desc: "Aditya kembali dan, melalui petunjuk dari Neneknya, mengungkap kebenaran di balik tragedi, memaksa kota untuk menghadapi dosa masa lalunya." }
+                }
+            };
+
+            // --- STATE MANAGEMENT ---
+            const appState = {
+                unlocked: new Set(),
+                isModalOpen: false
+            };
+
+            // --- ELEMENT REFERENCES ---
+            const elements = {
+                characters: document.getElementById('characters-container'),
+                locations: document.getElementById('locations-container'),
+                evidence: document.getElementById('evidence-container'),
+                timeline: document.getElementById('timeline-container'),
+                chartSection: document.getElementById('chart-section'),
+                modal: document.getElementById('modal'),
+                modalContent: document.getElementById('modal-content'),
+                modalTitle: document.getElementById('modal-title'),
+                modalBody: document.getElementById('modal-body'),
+                modalClose: document.getElementById('modal-close')
+            };
+
+            // --- RENDER FUNCTIONS ---
+            const render = {
+                all() {
+                    this.characters();
+                    this.locations();
+                    this.evidence();
+                    this.timeline();
+                },
+                characters() {
+                    elements.characters.innerHTML = Object.keys(DB.characters).map(key => `
+                        <div class="node bg-white p-4 rounded-lg shadow-md cursor-pointer" data-type="characters" data-key="${key}">
+                            <h3 class="font-bold text-lg text-[#4a3f35]">${DB.characters[key].name}</h3>
+                            <p class="text-sm text-gray-500">${DB.characters[key].role}</p>
+                        </div>
+                    `).join('');
+                },
+                locations() {
+                    elements.locations.innerHTML = Object.keys(DB.locations).map(key => `
+                        <div class="node bg-white p-4 rounded-lg shadow-md cursor-pointer" data-type="locations" data-key="${key}">
+                            <h3 class="font-bold text-lg text-[#4a3f35]">${DB.locations[key].name}</h3>
+                        </div>
+                    `).join('');
+                },
+                evidence() {
+                    elements.evidence.innerHTML = Object.keys(DB.evidence).map(key => `
+                        <div class="node flex flex-col items-center justify-center text-center bg-white p-4 rounded-lg shadow-md cursor-pointer aspect-square" data-type="evidence" data-key="${key}">
+                            <span class="text-4xl">${DB.evidence[key].icon}</span>
+                            <h3 class="font-bold text-md mt-2 text-[#4a3f35]">${DB.evidence[key].name}</h3>
+                        </div>
+                    `).join('');
+                },
+                timeline() {
+                    elements.timeline.innerHTML = Object.keys(DB.timeline).map(key => `
+                        <div class="timeline-item ${appState.unlocked.has(key) ? 'unlocked' : ''}" data-key="${key}">
+                            <p class="text-sm text-gray-500">${DB.timeline[key].year}</p>
+                            <h3 class="font-bold text-lg text-[#4a3f35]">${DB.timeline[key].title}</h3>
+                            <p class="text-gray-700">${DB.timeline[key].desc}</p>
+                        </div>
+                    `).join('');
+                }
+            };
+
+            // --- MODAL & INTERACTION LOGIC ---
+            function openModal(type, key) {
+                const data = DB[type][key];
+                elements.modalTitle.textContent = data.name || data.title;
+                elements.modalBody.innerHTML = `<p>${data.desc}</p>`;
+                elements.modal.classList.remove('opacity-0', 'pointer-events-none');
+                elements.modalContent.classList.remove('scale-95');
+                appState.isModalOpen = true;
+                
+                // Unlock related content
+                unlockContent(key);
+            }
+
+            function closeModal() {
+                elements.modal.classList.add('opacity-0', 'pointer-events-none');
+                elements.modalContent.classList.add('scale-95');
+                appState.isModalOpen = false;
+            }
+
+            function unlockContent(key) {
+                const unlocks = {
+                    buku_harian: ['penyakit_manis', 'kambing_hitam', 'rapat_gelap', 'malam_tragedi'],
+                    buku_kas: ['pengungkapan']
+                };
+
+                if (unlocks[key]) {
+                    unlocks[key].forEach(item => appState.unlocked.add(item));
+                    render.timeline();
+                }
+                
+                if (key === 'buku_kas') {
+                    elements.chartSection.classList.remove('hidden');
+                    createChart();
+                }
+            }
+            
+            // --- CHART CREATION ---
+            function createChart() {
+                const ctx = document.getElementById('deathsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['5 Thn Lalu', '4 Thn Lalu', '3 Thn Lalu', '2 Thn Lalu', '1 Thn Lalu'],
+                        datasets: [{
+                            label: 'Kematian Anak (Hilir Sungai)',
+                            data: [3, 5, 8, 12, 15],
+                            borderColor: '#8c6a56',
+                            backgroundColor: '#8c6a5633',
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: 'Kematian Anak (Area Lain)',
+                            data: [1, 1, 2, 1, 2],
+                            borderColor: '#d3c5bc',
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, title: { display: true, text: 'Jumlah Kematian' } }
+                        },
+                        plugins: {
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                             title: {
+                                display: true,
+                                text: 'Grafik Kematian Anak per Tahun di Prabayaksa'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // --- EVENT LISTENERS ---
+            document.getElementById('investigation-board').addEventListener('click', (e) => {
+                const node = e.target.closest('.node');
+                if (node) {
+                    const { type, key } = node.dataset;
+                    openModal(type, key);
+                }
+            });
+
+            elements.modalClose.addEventListener('click', closeModal);
+            elements.modal.addEventListener('click', (e) => {
+                if (e.target === elements.modal) closeModal();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && appState.isModalOpen) closeModal();
+            });
+
+            // --- INITIAL RENDER ---
+            render.all();
+        });
+    </script>
+</body>
+</html>
